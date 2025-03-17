@@ -1,4 +1,5 @@
 export interface Equipment {
+  id?: string;
   department: string;
   internalNumber: string;
   name: string;
@@ -68,14 +69,26 @@ export interface ClothingPPEItem {
 
 export interface EquipmentStatus {
   equipmentId: string;
-  internalNumber: string;
   status: 'operational' | 'non-operational';
-  exitDate?: Date;
+  exitDate?: string;
   exitTime?: string;
   supervisor?: string;
   mechanic?: string;
-  problems?: string[];
-  spareParts?: string[];
+  problems?: string;
+  spareParts?: string;
+}
+
+export interface EquipmentStatusFormData {
+  equipmentId: string;
+  status: 'operational' | 'non-operational';
+  exitDate?: string;
+  exitTime?: string;
+  supervisor?: string;
+  mechanic?: string;
+  commonProblems: string[];
+  otherProblem: string;
+  spareParts: string[];
+  otherSparePart: string;
 }
 
 export interface WorkingEquipment {

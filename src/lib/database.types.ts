@@ -112,7 +112,6 @@ export interface Database {
           }
         ]
       }
-      // Add other table types as needed
     }
     Views: {
       [_ in never]: never

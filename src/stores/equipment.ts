@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 import type { Equipment, EquipmentStatus, WorkingEquipment } from '../types';
 
 interface EquipmentState {
@@ -25,16 +24,13 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   fetchEquipment: async () => {
     try {
       set({ loading: true, error: null });
-      const { data, error } = await supabase
-        .from('equipment')
-        .select(`
-          *,
-          department:departments(name),
-          photos:equipment_photos(url)
-        `);
-
-      if (error) throw error;
-
+      const response = await fetch('http://localhost:3000/api/equipment');
+      
+      if (!response.ok) {
+        throw new Error('Error fetching equipment');
+      }
+      
+      const data = await response.json();
       set({ equipment: data || [] });
     } catch (error) {
       set({ error: (error as Error).message });
@@ -46,16 +42,13 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   fetchWorkingEquipment: async () => {
     try {
       set({ loading: true, error: null });
-      const { data, error } = await supabase
-        .from('working_equipment')
-        .select(`
-          *,
-          equipment:equipment(name, internal_number),
-          operator:personnel(full_name)
-        `);
-
-      if (error) throw error;
-
+      const response = await fetch('http://localhost:3000/api/equipment/working');
+      
+      if (!response.ok) {
+        throw new Error('Error fetching working equipment');
+      }
+      
+      const data = await response.json();
       set({ workingEquipment: data || [] });
     } catch (error) {
       set({ error: (error as Error).message });
@@ -67,11 +60,30 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   addEquipment: async (equipment) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase
-        .from('equipment')
-        .insert([equipment]);
+      
+      // Mapear los campos de la interfaz Equipment a los campos esperados por el servidor
+      const serverEquipment = {
+        internal_number: equipment.internalNumber,
+        name: equipment.name,
+        type: equipment.type,
+        status: equipment.status,
+        department_id: equipment.department,
+        technical_sheet_url: equipment.technicalSheet || null,
+        photos: equipment.photos || []
+      };
+      
+      const response = await fetch('http://localhost:3000/api/equipment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(serverEquipment),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error adding equipment');
+      }
 
       await get().fetchEquipment();
     } catch (error) {
@@ -84,12 +96,30 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   updateEquipment: async (id, equipment) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase
-        .from('equipment')
-        .update(equipment)
-        .eq('id', id);
+      
+      // Mapear los campos de la interfaz Equipment a los campos esperados por el servidor
+      const serverEquipment: Record<string, any> = {};
+      
+      if (equipment.internalNumber !== undefined) serverEquipment.internal_number = equipment.internalNumber;
+      if (equipment.name !== undefined) serverEquipment.name = equipment.name;
+      if (equipment.type !== undefined) serverEquipment.type = equipment.type;
+      if (equipment.status !== undefined) serverEquipment.status = equipment.status;
+      if (equipment.department !== undefined) serverEquipment.department_id = equipment.department;
+      if (equipment.technicalSheet !== undefined) serverEquipment.technical_sheet_url = equipment.technicalSheet;
+      if (equipment.photos !== undefined) serverEquipment.photos = equipment.photos;
+      
+      const response = await fetch(`http://localhost:3000/api/equipment/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(serverEquipment),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error updating equipment');
+      }
 
       await get().fetchEquipment();
     } catch (error) {
@@ -102,12 +132,13 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   deleteEquipment: async (id) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase
-        .from('equipment')
-        .delete()
-        .eq('id', id);
+      const response = await fetch(`http://localhost:3000/api/equipment/${id}`, {
+        method: 'DELETE',
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Error deleting equipment');
+      }
 
       await get().fetchEquipment();
     } catch (error) {
@@ -121,29 +152,30 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      // Start a transaction
-      const { error: statusError } = await supabase
-        .from('equipment_status')
-        .insert([{
-          equipment_id: status.equipmentId,
-          status: status.status,
-          exit_date: status.exitDate,
-          exit_time: status.exitTime,
-          supervisor_id: status.supervisor,
-          mechanic_id: status.mechanic,
-        }])
-        .select()
-        .single();
+      const response = await fetch('http://localhost:3000/api/equipment/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(status),
+      });
 
-      if (statusError) throw statusError;
+      if (!response.ok) {
+        throw new Error('Error updating equipment status');
+      }
 
-      // Update equipment status
-      const { error: equipmentError } = await supabase
-        .from('equipment')
-        .update({ status: status.status })
-        .eq('id', status.equipmentId);
+      // Update equipment status in the main equipment list
+      const equipmentResponse = await fetch(`http://localhost:3000/api/equipment/${status.equipmentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status.status }),
+      });
 
-      if (equipmentError) throw equipmentError;
+      if (!equipmentResponse.ok) {
+        throw new Error('Error updating equipment status');
+      }
 
       await get().fetchEquipment();
     } catch (error) {
@@ -156,11 +188,17 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   updateWorkingEquipment: async (equipment) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase
-        .from('working_equipment')
-        .upsert([equipment]);
+      const response = await fetch('http://localhost:3000/api/equipment/working', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(equipment),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Error updating working equipment');
+      }
 
       await get().fetchWorkingEquipment();
     } catch (error) {

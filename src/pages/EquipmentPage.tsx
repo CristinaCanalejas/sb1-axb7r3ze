@@ -1,42 +1,34 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import EquipmentForm from '../components/equipment/EquipmentForm';
 import EquipmentList from '../components/equipment/EquipmentList';
 import type { Equipment } from '../types';
+import { useEquipmentStore } from '../stores/equipment';
 
 const EquipmentPage = () => {
-  const [equipment, setEquipment] = useState<Equipment[]>([
-    {
-      internalNumber: 'EQ001',
-      name: 'Camión Volvo FH',
-      type: 'Camión',
-      status: 'operational',
-      department: 'TRANSPORTE',
-      technicalSheet: 'volvo-fh.pdf',
-      photos: ['photo1.jpg', 'photo2.jpg'],
-    },
-    {
-      internalNumber: 'EQ002',
-      name: 'Excavadora CAT 320',
-      type: 'Excavadora',
-      status: 'non-operational',
-      department: 'EXTRACCIÓN',
-      technicalSheet: 'cat-320.pdf',
-      photos: ['photo3.jpg'],
-    },
-  ]);
-
+  const { 
+    equipment, 
+    loading, 
+    error, 
+    fetchEquipment, 
+    addEquipment, 
+    updateEquipment, 
+    deleteEquipment 
+  } = useEquipmentStore();
+  
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+
+  useEffect(() => {
+    fetchEquipment();
+  }, [fetchEquipment]);
 
   const handleSave = (newEquipment: Equipment) => {
     if (editingEquipment) {
       // Update existing equipment
-      setEquipment(equipment.map(eq => 
-        eq.internalNumber === editingEquipment.internalNumber ? newEquipment : eq
-      ));
+      updateEquipment(editingEquipment.internalNumber, newEquipment);
       setEditingEquipment(null);
     } else {
       // Add new equipment
-      setEquipment([...equipment, newEquipment]);
+      addEquipment(newEquipment);
     }
   };
 
@@ -44,8 +36,12 @@ const EquipmentPage = () => {
     setEditingEquipment(eq);
   };
 
-  const handleDelete = (internalNumber: string) => {
-    setEquipment(equipment.filter(eq => eq.internalNumber !== internalNumber));
+  const handleDelete = (equipment: Equipment) => {
+    if (equipment.id) {
+      deleteEquipment(equipment.id);
+    } else {
+      console.error('No se puede eliminar un equipo sin ID');
+    }
   };
 
   return (
@@ -63,11 +59,21 @@ const EquipmentPage = () => {
         </div>
       </div>
       
-      <EquipmentList 
-        equipment={equipment}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      {loading ? (
+        <div className="flex justify-center items-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      ) : error ? (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>{error}</p>
+        </div>
+      ) : (
+        <EquipmentList 
+          equipment={equipment}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,13 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+
+interface User {
+  id: string;
+  email: string;
+  user_metadata?: {
+    full_name?: string;
+    role?: string;
+  };
+}
 
 interface AuthState {
   user: User | null;
@@ -20,11 +27,19 @@ export const useAuthStore = create<AuthState>((set) => ({
   signIn: async (email: string, password: string) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Here you would integrate with your authentication service
+      // For now, we'll just simulate a successful login
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      set({ 
+        user: {
+          id: '1',
+          email,
+          user_metadata: {
+            full_name: 'Admin User',
+            role: 'admin'
+          }
+        }
       });
-      if (error) throw error;
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;
@@ -36,35 +51,19 @@ export const useAuthStore = create<AuthState>((set) => ({
   signUp: async (email: string, password: string, fullName: string) => {
     try {
       set({ loading: true, error: null });
-      
-      // Create auth user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
+      // Here you would integrate with your authentication service
+      // For now, we'll just simulate a successful signup
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      set({ 
+        user: {
+          id: Date.now().toString(),
+          email,
+          user_metadata: {
             full_name: fullName,
-            role: 'user',
-          },
-        },
+            role: 'user'
+          }
+        }
       });
-
-      if (signUpError) throw signUpError;
-
-      // Create personnel record
-      if (authData.user) {
-        const { error: personnelError } = await supabase
-          .from('personnel')
-          .insert([
-            {
-              id: authData.user.id,
-              full_name: fullName,
-              email: email,
-            },
-          ]);
-
-        if (personnelError) throw personnelError;
-      }
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;
@@ -76,8 +75,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Here you would integrate with your authentication service
+      // For now, we'll just clear the user
+      await new Promise(resolve => setTimeout(resolve, 500));
       set({ user: null });
     } catch (error) {
       set({ error: (error as Error).message });
@@ -89,13 +89,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   initialize: async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      set({ user, loading: false });
-
-      // Listen for auth state changes
-      supabase.auth.onAuthStateChange((_event, session) => {
-        set({ user: session?.user ?? null });
-      });
+      // Here you would check for an existing session
+      // For now, we'll just simulate the check
+      await new Promise(resolve => setTimeout(resolve, 500));
+      set({ loading: false });
     } catch (error) {
       console.error('Error initializing auth:', error);
       set({ loading: false, error: (error as Error).message });

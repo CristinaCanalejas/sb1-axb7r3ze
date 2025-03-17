@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { AlertCircle, Mail, Lock, User } from 'lucide-react';
 
 interface Props {
@@ -19,35 +18,9 @@ const SignUpForm: React.FC<Props> = ({ onClose }) => {
     setLoading(true);
 
     try {
-      // Sign up the user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: 'user', // Default role
-          },
-        },
-      });
-
-      if (signUpError) throw signUpError;
-
-      // Create personnel record
-      if (authData.user) {
-        const { error: personnelError } = await supabase
-          .from('personnel')
-          .insert([
-            {
-              id: authData.user.id,
-              full_name: fullName,
-              email: email,
-            },
-          ]);
-
-        if (personnelError) throw personnelError;
-      }
-
+      // Here you would integrate with your authentication service
+      // For now, we'll just simulate a successful signup
+      await new Promise(resolve => setTimeout(resolve, 1000));
       onClose();
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al crear usuario');

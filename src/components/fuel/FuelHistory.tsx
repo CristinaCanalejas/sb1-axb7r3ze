@@ -1,39 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Download, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 const FuelHistory = () => {
-  // Mock data for demonstration
-  const fuelRecords = [
-    {
-      id: '1',
-      date: new Date('2024-03-10T08:30:00'),
-      operator: 'Juan Pérez',
-      equipment: 'EQ001 - Camión Volvo FH',
-      odometer: 125000,
-      fuelType: 'Diesel',
-      liters: 150.5,
-      department: 'TRANSPORTE',
-      supervisor: 'Roberto Sánchez',
-      internalNumber: 'CAM-001',
-      notes: 'Recarga programada',
-    },
-    {
-      id: '2',
-      date: new Date('2024-03-10T10:15:00'),
-      operator: 'María González',
-      equipment: 'EQ002 - Excavadora CAT 320',
-      odometer: 3500,
-      fuelType: 'Diesel',
-      liters: 200.0,
-      department: 'EXTRACCIÓN',
-      supervisor: 'Ana Martínez',
-      internalNumber: 'EXC-001',
-      notes: 'Recarga de emergencia',
-    },
-  ];
-
+  const [fuelRecords, setFuelRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+
+  useEffect(() => {
+    fetchFuelRecords();
+  }, []);
+
+  const fetchFuelRecords = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:3000/api/fuel');
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener los registros de combustible');
+      }
+      
+      const data = await response.json();
+      setFuelRecords(data);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching fuel records:', err);
+      setError('No se pudieron cargar los registros de combustible');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -45,67 +42,90 @@ const FuelHistory = () => {
         </button>
       </div>
       
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fecha y Hora
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Operador
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Equipo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Odómetro
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Combustible
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Litros
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {fuelRecords.map((record) => (
-              <tr key={record.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {format(record.date, 'dd/MM/yyyy HH:mm')}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {record.operator}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {record.equipment}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {record.odometer.toLocaleString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {record.fuelType}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {record.liters.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <button 
-                    className="text-blue-600 hover:text-blue-800"
-                    onClick={() => setSelectedRecord(record)}
-                  >
-                    <FileText className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? (
+        <div className="p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto"></div>
+          <p className="mt-2 text-gray-600">Cargando registros...</p>
+        </div>
+      ) : error ? (
+        <div className="p-8 text-center text-red-500">
+          <p>{error}</p>
+          <button 
+            onClick={fetchFuelRecords} 
+            className="mt-2 text-blue-500 hover:underline"
+          >
+            Intentar nuevamente
+          </button>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          {fuelRecords.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              No hay registros de combustible disponibles.
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha y Hora
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Operador
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Equipo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Odómetro
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Combustible
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Litros
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {fuelRecords.map((record: any) => (
+                  <tr key={record.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {format(new Date(record.date), 'dd/MM/yyyy HH:mm')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.operator_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.equipment_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.odometer?.toLocaleString() || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.fuel_type}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {parseFloat(record.liters).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button 
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => setSelectedRecord(record)}
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       {/* Details Modal */}
       {selectedRecord && (
@@ -118,7 +138,7 @@ const FuelHistory = () => {
                     Detalles de Recarga
                   </h2>
                   <p className="text-sm text-gray-500">
-                    {format(selectedRecord.date, 'dd/MM/yyyy HH:mm')}
+                    {format(new Date(selectedRecord.date), 'dd/MM/yyyy HH:mm')}
                   </p>
                 </div>
                 <button
@@ -136,13 +156,13 @@ const FuelHistory = () => {
                     <div>
                       <dt className="text-sm text-gray-500">Equipo</dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {selectedRecord.equipment}
+                        {selectedRecord.equipment_name}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-sm text-gray-500">N° Interno</dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {selectedRecord.internalNumber}
+                        {selectedRecord.internal_number}
                       </dd>
                     </div>
                     <div>
@@ -154,7 +174,7 @@ const FuelHistory = () => {
                     <div>
                       <dt className="text-sm text-gray-500">Odómetro</dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {selectedRecord.odometer.toLocaleString()} km
+                        {selectedRecord.odometer?.toLocaleString() || 'N/A'} km
                       </dd>
                     </div>
                   </dl>
@@ -166,37 +186,30 @@ const FuelHistory = () => {
                     <div>
                       <dt className="text-sm text-gray-500">Tipo de Combustible</dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {selectedRecord.fuelType}
+                        {selectedRecord.fuel_type}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-sm text-gray-500">Cantidad</dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {selectedRecord.liters.toFixed(2)} litros
+                        {parseFloat(selectedRecord.liters).toFixed(2)} litros
                       </dd>
                     </div>
                     <div>
                       <dt className="text-sm text-gray-500">Operador</dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {selectedRecord.operator}
+                        {selectedRecord.operator_name}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-sm text-gray-500">Supervisor</dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {selectedRecord.supervisor}
+                        {selectedRecord.supervisor_name}
                       </dd>
                     </div>
                   </dl>
                 </div>
               </div>
-
-              {selectedRecord.notes && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Notas</h3>
-                  <p className="text-sm text-gray-900">{selectedRecord.notes}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>

@@ -18,6 +18,7 @@ const EquipmentForm: React.FC<Props> = ({ equipment, onSave, onCancel }) => {
   });
 
   const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (equipment) {
@@ -37,7 +38,7 @@ const EquipmentForm: React.FC<Props> = ({ equipment, onSave, onCancel }) => {
     'Grúa',
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.department || !formData.internalNumber || !formData.name || !formData.type) {
@@ -45,15 +46,27 @@ const EquipmentForm: React.FC<Props> = ({ equipment, onSave, onCancel }) => {
       return;
     }
 
-    onSave(formData);
-    setFormData({
-      department: '',
-      internalNumber: '',
-      name: '',
-      type: '',
-      status: 'operational',
-    });
+    setLoading(true);
     setError('');
+
+    try {
+      // Pasar los datos del formulario directamente
+      onSave(formData);
+      
+      setFormData({
+        department: '',
+        internalNumber: '',
+        name: '',
+        type: '',
+        status: 'operational',
+      });
+      setError('');
+    } catch (err) {
+      console.error('Error saving equipment:', err);
+      setError('Error al guardar el equipo');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -199,10 +212,17 @@ const EquipmentForm: React.FC<Props> = ({ equipment, onSave, onCancel }) => {
         </button>
         <button
           type="submit"
-          className="btn btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+          className="btn btn-primary flex items-center gap-2 w-full sm:w-auto"
+          disabled={loading}
         >
-          <Save className="w-4 h-4" />
-          {equipment ? 'Actualizar Equipo' : 'Guardar Equipo'}
+          {loading ? (
+            <span>Guardando...</span>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              Guardar Equipo
+            </>
+          )}
         </button>
       </div>
     </form>

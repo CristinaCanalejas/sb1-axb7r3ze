@@ -6,7 +6,7 @@ import { generateEquipmentPDF } from '../../utils/pdfGenerator';
 interface Props {
   equipment: Equipment[];
   onEdit: (equipment: Equipment) => void;
-  onDelete: (id: string) => void;
+  onDelete: (equipment: Equipment) => void;
 }
 
 const EquipmentList: React.FC<Props> = ({ equipment, onEdit, onDelete }) => {
@@ -113,7 +113,7 @@ const EquipmentList: React.FC<Props> = ({ equipment, onEdit, onDelete }) => {
                     </button>
                     <button
                       className="text-red-600 hover:text-red-800"
-                      onClick={() => onDelete(eq.internalNumber)}
+                      onClick={() => onDelete(eq)}
                       title="Eliminar"
                     >
                       <Trash2 className="w-4 h-4" />

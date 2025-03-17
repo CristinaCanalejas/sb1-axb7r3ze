@@ -17,6 +17,8 @@ const FuelForm = () => {
   });
 
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
   const departments = ['EXTRACCIÓN', 'TRANSPORTE', 'ADMINISTRACIÓN'];
   const fuelTypes = ['Diesel', 'Gasolina 95', 'Gasolina 97'];
@@ -40,7 +42,7 @@ const FuelForm = () => {
     { id: '3', name: 'Luis García' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.operatorId || !formData.internalNumber || !formData.equipmentId || !formData.fuelType || formData.liters <= 0 || !formData.supervisor || !formData.department) {
@@ -48,9 +50,45 @@ const FuelForm = () => {
       return;
     }
 
-    // Here you would typically save the record
-    console.log('Fuel record:', formData);
+    setLoading(true);
     setError('');
+
+    try {
+      const response = await fetch('http://localhost:3000/api/fuel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar el registro');
+      }
+
+      setSuccess('Registro guardado exitosamente');
+      setFormData({
+        date: new Date(),
+        department: '',
+        operatorId: '',
+        internalNumber: '',
+        equipmentId: '',
+        odometer: 0,
+        fuelType: '',
+        liters: 0,
+        supervisor: '',
+      });
+
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar el registro');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,9 +138,7 @@ const FuelForm = () => {
           >
             <option value="">Seleccionar Departamento</option>
             {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
+              <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
         </div>
@@ -217,14 +253,32 @@ const FuelForm = () => {
         </div>
       )}
 
+      {/* Success Message */}
+      {success && (
+        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg">
+          <AlertCircle className="w-5 h-5" />
+          <span>{success}</span>
+        </div>
+      )}
+
       {/* Submit Button */}
       <div className="flex justify-end">
         <button
           type="submit"
           className="btn btn-primary flex items-center gap-2"
+          disabled={loading}
         >
-          <Save className="w-4 h-4" />
-          Guardar Registro
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <span>Guardando...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              <span>Guardar Registro</span>
+            </>
+          )}
         </button>
       </div>
     </form>
